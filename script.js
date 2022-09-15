@@ -4,6 +4,8 @@ const startBtn = document.getElementById("starts");
 const countdownOverlay = document.getElementById("countdown");
 const resultModal = document.getElementById("result");
 const modalBackground = document.getElementById("modal-background");
+const nav = document.getElementById("nav");
+
 
 // variables
 let userText = "";
@@ -16,6 +18,7 @@ fetch("./texts.json")
   .then((res) => res.json())
   .then((data) => {
     questionText = data[Math.floor(Math.random() * data.length)];
+    console.log(questionText)
     question.innerHTML = questionText;
   });
 
@@ -45,6 +48,7 @@ const typeController = (e) => {
   if (newLetterCorrect) {
     display.innerHTML += `<span class="green">${newLetter === " " ? "▪" : newLetter}</span>`;
   } else {
+    errorCount++;
     display.innerHTML += `<span class="red">${newLetter === " " ? "▪" : newLetter}</span>`;
   }
 
@@ -64,10 +68,15 @@ const validate = (key) => {
 // FINISHED TYPING
 const gameOver = () => {
   document.removeEventListener("keydown", typeController);
+
   // the current time is the finish time
   // so total time taken is current time - start time
   const finishTime = new Date().getTime();
   const timeTaken = (finishTime - startTime) / 1000;
+  const countWords = questionText.split(" ").length;
+  const wpm = Math.round((countWords / timeTaken) * 60);
+  const accuracy = Math.round(((countWords - errorCount) / countWords) * 100);
+
 
   // show result modal
   resultModal.innerHTML = "";
@@ -78,19 +87,24 @@ const gameOver = () => {
   // make it inactive
   display.classList.add("inactive");
   // show result
+
+
   resultModal.innerHTML += `
     <h1>Finished!</h1>
     <p>You took: <span class="bold">${timeTaken}</span> seconds</p>
+    <p>Your wpm is: <span class="bold">${wpm}</span></p>
+    <p>Consistency: <span class="bold">${accuracy}</span> %</p>
     <p>You made <span class="bold red">${errorCount}</span> mistakes</p>
     <button onclick="closeModal()">Close</button>
   `;
-
   addHistory(questionText, timeTaken, errorCount);
 
   // restart everything
   startTime = null;
   errorCount = 0;
   userText = "";
+  wpm = 0;
+  accuracy = 0;
   display.classList.add("inactive");
 };
 
@@ -112,9 +126,10 @@ const start = () => {
     // finished timer
     if (count == 0) {
       // -------------- START TYPING -----------------
-      document.addEventListener("keydown", typeController);
       countdownOverlay.style.display = "none";
+      document.addEventListener("keydown", typeController);
       display.classList.remove("inactive");
+
 
       clearInterval(startCountdown);
       startTime = new Date().getTime();
@@ -132,7 +147,7 @@ displayHistory();
 // Show typing time spent
 setInterval(() => {
   const currentTime = new Date().getTime();
-  const timeSpent = Math.round((currentTime - startTime) / 1000);
+  const timeSpent = parseInt((currentTime - startTime) / 1000);
 
 
   document.getElementById("show-time").innerHTML = `${startTime ? timeSpent : 0} seconds`;
